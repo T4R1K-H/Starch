@@ -258,3 +258,4 @@ If you experience issues with Hyprland on NVIDIA:
 
 
 **Note**: This script makes significant changes to your system. While it includes error handling, it's recommended to review the script before running it and ensure you have backups of any important data.
+**PS**: Shift + Super + H brings up the keybindings list.
