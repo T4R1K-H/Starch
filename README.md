@@ -1,7 +1,10 @@
 # Starch (Start Arch) - Arch post-install script.
 
 A comprehensive automated setup script for Arch Linux that transforms a minimal installation into a fully-featured Hyprland-based desktop environment with all essential applications and configurations.
-
+<img width="1920" height="1080" alt="starch-screenshot-4" src="https://github.com/user-attachments/assets/270038f4-4505-40fa-a4f0-6f3bfbfa3239" />
+<img width="1920" height="1080" alt="starch-screenshot-3" src="https://github.com/user-attachments/assets/8bc71faf-6371-4802-89c1-8f50f36e3553" />
+<img width="1920" height="1080" alt="starch-screenshot-2" src="https://github.com/user-attachments/assets/6e3ea729-edc5-4ccf-876a-b5413a729d69" />
+<img width="1920" height="1080" alt="starch-screenshot-1" src="https://github.com/user-attachments/assets/d47bfcfa-2a6b-4ddf-8564-c86f1b567b53" />
 ## Overview
 
 This script is designed to be run **immediately after a minimal Arch Linux installation**. It automates the entire post-installation process, including:
