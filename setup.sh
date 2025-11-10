@@ -136,6 +136,12 @@ fi
 print_message "Installing paru..."
 if ! command -v paru &> /dev/null; then
     cd /tmp
+    # Remove existing paru directory if it exists
+    if [ -d "paru" ]; then
+        print_message "Removing existing paru directory..."
+        rm -rf paru
+    fi
+    
     if ! git clone https://aur.archlinux.org/paru.git; then
         print_error "Failed to clone paru repository."
         exit 1
