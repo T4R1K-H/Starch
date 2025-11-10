@@ -69,9 +69,9 @@ print_question "Do you want to delete the Starch directory after setup completes
 read -r response
 if [[ "$response" =~ ^[Yy]$ ]]; then
     DELETE_AFTER_SETUP=true
-    print_warning "The Arch-Setup directory will be deleted after successful completion."
+    print_warning "The Starch directory will be deleted after successful completion."
 else
-    print_message "The Arch-Setup directory will be kept after setup."
+    print_message "The Starch directory will be kept after setup."
 fi
 echo ""
 
@@ -135,21 +135,41 @@ fi
 # Install paru (AUR helper)
 print_message "Installing paru..."
 if ! command -v paru &> /dev/null; then
+    # Install paru-bin (pre-compiled binary) to avoid rust compilation issues
     cd /tmp
-    # Remove existing paru directory if it exists
-    if [ -d "paru" ]; then
-        print_message "Removing existing paru directory..."
-        rm -rf paru
+    # Remove existing paru-bin directory if it exists
+    if [ -d "paru-bin" ]; then
+        print_message "Removing existing paru-bin directory..."
+        rm -rf paru-bin
     fi
     
-    if ! git clone https://aur.archlinux.org/paru.git; then
-        print_error "Failed to clone paru repository."
+    if ! git clone https://aur.archlinux.org/paru-bin.git; then
+        print_error "Failed to clone paru-bin repository."
         exit 1
     fi
-    cd paru
+    cd paru-bin
     if ! makepkg -si --noconfirm; then
-        print_error "Failed to build and install paru."
-        exit 1
+        print_error "Failed to install paru-bin."
+        print_error "Trying alternative method with yay..."
+        
+        # Fallback to yay if paru fails
+        cd /tmp
+        if [ -d "yay-bin" ]; then
+            rm -rf yay-bin
+        fi
+        
+        if ! git clone https://aur.archlinux.org/yay-bin.git; then
+            print_error "Failed to clone yay-bin repository."
+            exit 1
+        fi
+        cd yay-bin
+        if ! makepkg -si --noconfirm; then
+            print_error "Failed to install yay-bin as fallback."
+            exit 1
+        fi
+        # Create paru alias to yay
+        sudo ln -sf /usr/bin/yay /usr/bin/paru
+        print_message "Yay installed successfully as fallback!"
     fi
     cd "$SCRIPT_DIR"
     print_message "Paru installed successfully!"
@@ -606,12 +626,12 @@ find "$HOME/.config" -type d -exec chmod 755 {} \;
 
 # Delete Arch-Setup directory if requested
 if [ "$DELETE_AFTER_SETUP" = true ]; then
-    print_message "Deleting Arch-Setup directory as requested..."
+    print_message "Deleting Starch directory as requested..."
     cd "$HOME"
     if rm -rf "$SCRIPT_DIR"; then
-        print_message "Arch-Setup directory deleted successfully!"
+        print_message "Starch directory deleted successfully!"
     else
-        print_warning "Failed to delete Arch-Setup directory. You may need to delete it manually."
+        print_warning "Failed to delete Starch directory. You may need to delete it manually."
     fi
 fi
 
