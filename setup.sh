@@ -65,7 +65,7 @@ fi
 
 # Ask if user wants to delete the setup directory after completion
 DELETE_AFTER_SETUP=false
-print_question "Do you want to delete the Arch-Setup directory after setup completes? (y/n)"
+print_question "Do you want to delete the Starch directory after setup completes? (y/n)"
 read -r response
 if [[ "$response" =~ ^[Yy]$ ]]; then
     DELETE_AFTER_SETUP=true
