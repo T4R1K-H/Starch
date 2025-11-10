@@ -235,7 +235,7 @@ PACKAGES=(
     imagemagick
     fd
     okular
-    lxappearance
+    nwg-look-bin
     jdk21-openjdk
     tealdeer
     xournalpp
@@ -282,33 +282,36 @@ if [ "$GPU_TYPE" != "none" ]; then
     
     case $GPU_TYPE in
         amd)
-            GPU_PACKAGES=(
-                mesa
-                lib32-mesa
-                vulkan-radeon
-                lib32-vulkan-radeon
-                libva-mesa-driver
-                lib32-libva-mesa-driver
-                mesa-vdpau
-                lib32-mesa-vdpau
-            )
-            if ! paru -S --needed --noconfirm "${GPU_PACKAGES[@]}"; then
-                print_error "Failed to install AMD GPU drivers"
+            # Install AMD drivers in stages
+            print_message "Installing AMD base drivers..."
+            if ! paru -S --needed --noconfirm mesa vulkan-radeon libva-mesa-driver mesa-vdpau; then
+                print_error "Failed to install AMD base drivers"
                 exit 1
             fi
+            
+            print_message "Installing AMD 32-bit libraries..."
+            if ! paru -S --needed --noconfirm lib32-mesa lib32-vulkan-radeon lib32-libva-mesa-driver lib32-mesa-vdpau; then
+                print_warning "Failed to install AMD 32-bit libraries, but continuing..."
+            fi
+            
             print_message "AMD GPU drivers installed successfully!"
             ;;
         nvidia)
-            GPU_PACKAGES=(
-                nvidia
-                nvidia-utils
-                lib32-nvidia-utils
-                nvidia-settings
-                egl-wayland
-            )
-            if ! paru -S --needed --noconfirm "${GPU_PACKAGES[@]}"; then
-                print_error "Failed to install NVIDIA GPU drivers"
+            # Install NVIDIA drivers in stages to handle dependencies correctly
+            print_message "Installing NVIDIA base drivers..."
+            if ! paru -S --needed --noconfirm nvidia nvidia-utils egl-wayland; then
+                print_error "Failed to install NVIDIA base drivers"
                 exit 1
+            fi
+            
+            print_message "Installing NVIDIA 32-bit libraries..."
+            if ! paru -S --needed --noconfirm lib32-nvidia-utils; then
+                print_warning "Failed to install lib32-nvidia-utils, but continuing..."
+            fi
+            
+            print_message "Installing NVIDIA settings..."
+            if ! paru -S --needed --noconfirm nvidia-settings; then
+                print_warning "Failed to install nvidia-settings, but continuing..."
             fi
             
             # Enable nvidia modules
@@ -330,19 +333,18 @@ if [ "$GPU_TYPE" != "none" ]; then
             print_warning "IMPORTANT: You may need to add 'nvidia-drm.modeset=1' to your kernel parameters"
             ;;
         intel)
-            GPU_PACKAGES=(
-                mesa
-                lib32-mesa
-                vulkan-intel
-                lib32-vulkan-intel
-                libva-intel-driver
-                lib32-libva-intel-driver
-                intel-media-driver
-            )
-            if ! paru -S --needed --noconfirm "${GPU_PACKAGES[@]}"; then
-                print_error "Failed to install Intel GPU drivers"
+            # Install Intel drivers in stages
+            print_message "Installing Intel base drivers..."
+            if ! paru -S --needed --noconfirm mesa vulkan-intel libva-intel-driver intel-media-driver; then
+                print_error "Failed to install Intel base drivers"
                 exit 1
             fi
+            
+            print_message "Installing Intel 32-bit libraries..."
+            if ! paru -S --needed --noconfirm lib32-mesa lib32-vulkan-intel lib32-libva-intel-driver; then
+                print_warning "Failed to install Intel 32-bit libraries, but continuing..."
+            fi
+            
             print_message "Intel GPU drivers installed successfully!"
             ;;
     esac
