@@ -235,7 +235,7 @@ PACKAGES=(
     imagemagick
     fd
     okular
-    nwg-look-bin
+    lxappearance
     jdk21-openjdk
     tealdeer
     xournalpp
