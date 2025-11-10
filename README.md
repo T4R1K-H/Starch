@@ -132,7 +132,7 @@ Arch-Setup/
 
 ```bash
 git clone https://github.com/T4R1K-H/Starch.git
-cd arch-setup
+cd Starch
 ```
 
 ### 2. Make the Script Executable
