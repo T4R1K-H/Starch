@@ -150,26 +150,7 @@ if ! command -v paru &> /dev/null; then
     cd paru-bin
     if ! makepkg -si --noconfirm; then
         print_error "Failed to install paru-bin."
-        print_error "Trying alternative method with yay..."
-        
-        # Fallback to yay if paru fails
-        cd /tmp
-        if [ -d "yay-bin" ]; then
-            rm -rf yay-bin
-        fi
-        
-        if ! git clone https://aur.archlinux.org/yay-bin.git; then
-            print_error "Failed to clone yay-bin repository."
-            exit 1
-        fi
-        cd yay-bin
-        if ! makepkg -si --noconfirm; then
-            print_error "Failed to install yay-bin as fallback."
-            exit 1
-        fi
-        # Create paru alias to yay
-        sudo ln -sf /usr/bin/yay /usr/bin/paru
-        print_message "Yay installed successfully as fallback!"
+        exit 1
     fi
     cd "$SCRIPT_DIR"
     print_message "Paru installed successfully!"
@@ -277,6 +258,9 @@ fi
 
 print_message "All system packages installed successfully!"
 
+# Variable to store NVIDIA warnings for end of script
+NVIDIA_WARNINGS=""
+
 # Install GPU drivers based on user selection
 if [ "$GPU_TYPE" != "none" ]; then
     print_message "Installing GPU drivers for $GPU_TYPE..."
@@ -321,20 +305,48 @@ if [ "$GPU_TYPE" != "none" ]; then
             
             # Add nvidia modules to mkinitcpio
             print_message "Adding NVIDIA modules to mkinitcpio..."
+            
+            # Backup original mkinitcpio.conf
+            sudo cp /etc/mkinitcpio.conf /etc/mkinitcpio.conf.backup
+            
+            # Use a more reliable method to add NVIDIA modules
             if grep -q "^MODULES=" /etc/mkinitcpio.conf; then
-                sudo sed -i 's/^MODULES=([^)]*/MODULES=(nvidia nvidia_modeset nvidia_uvm nvidia_drm/' /etc/mkinitcpio.conf
+                # Extract current modules and add NVIDIA ones
+                sudo awk '/^MODULES=/ {
+                    if ($0 ~ /\(.*\)/) {
+                        sub(/\(/, "(nvidia nvidia_modeset nvidia_uvm nvidia_drm ", $0)
+                    } else {
+                        $0 = "MODULES=(nvidia nvidia_modeset nvidia_uvm nvidia_drm)"
+                    }
+                }
+                {print}' /etc/mkinitcpio.conf > /tmp/mkinitcpio.conf.new
+                sudo mv /tmp/mkinitcpio.conf.new /etc/mkinitcpio.conf
             else
-                sudo sed -i '/^#MODULES=/a MODULES=(nvidia nvidia_modeset nvidia_uvm nvidia_drm)' /etc/mkinitcpio.conf
+                # Add new MODULES line after the commented one
+                sudo awk '/^#MODULES=/ {print; print "MODULES=(nvidia nvidia_modeset nvidia_uvm nvidia_drm)"; next}1' \
+                    /etc/mkinitcpio.conf > /tmp/mkinitcpio.conf.new
+                sudo mv /tmp/mkinitcpio.conf.new /etc/mkinitcpio.conf
             fi
             
             # Regenerate initramfs
             print_message "Regenerating initramfs..."
             if ! sudo mkinitcpio -P; then
-                print_warning "Failed to regenerate initramfs. You may need to run 'sudo mkinitcpio -P' manually after reboot."
+                print_warning "Failed to regenerate initramfs."
+                print_warning "Restoring backup mkinitcpio.conf..."
+                sudo mv /etc/mkinitcpio.conf.backup /etc/mkinitcpio.conf
+                NVIDIA_WARNINGS="${NVIDIA_WARNINGS}\n  ⚠ Initramfs regeneration failed - you may need to manually edit /etc/mkinitcpio.conf"
+                NVIDIA_WARNINGS="${NVIDIA_WARNINGS}\n    and run 'sudo mkinitcpio -P' after reboot."
+            else
+                # Remove backup if successful
+                sudo rm -f /etc/mkinitcpio.conf.backup
             fi
             
             print_message "NVIDIA GPU drivers installed and configured successfully!"
-            print_warning "IMPORTANT: You may need to add 'nvidia-drm.modeset=1' to your kernel parameters"
+            
+            # Store NVIDIA warnings for display at the end
+            NVIDIA_WARNINGS="${NVIDIA_WARNINGS}\n  ⚠ IMPORTANT: You may need to add 'nvidia-drm.modeset=1' to your kernel parameters"
+            NVIDIA_WARNINGS="${NVIDIA_WARNINGS}\n    Edit your bootloader configuration (e.g., /boot/loader/entries/*.conf for systemd-boot"
+            NVIDIA_WARNINGS="${NVIDIA_WARNINGS}\n    or /etc/default/grub for GRUB) and add it to the kernel command line."
             ;;
         intel)
             # Install Intel drivers in stages
@@ -440,8 +452,8 @@ mcd() {
 eval "$(starship init bash)"
 
 # Set default editor
-export EDITOR="/usr/sbin/helix"
-export VISUAL="/usr/sbin/helix"
+export EDITOR="/usr/bin/helix"
+export VISUAL="/usr/bin/helix"
 
 # Initialize fzf key bindings and fuzzy completion
 eval "$(fzf --bash)"
@@ -681,5 +693,14 @@ print_message "  ✓ Paccache (automatic cache cleanup)"
 if [ "$GPU_TYPE" != "none" ]; then
     print_message "  ✓ GPU Drivers ($GPU_TYPE)"
 fi
+
+# Display NVIDIA warnings at the end if applicable
+if [ -n "$NVIDIA_WARNINGS" ]; then
+    echo ""
+    print_warning "=== NVIDIA POST-INSTALLATION STEPS ==="
+    echo -e "$NVIDIA_WARNINGS"
+    echo ""
+fi
+
 print_message ""
 print_message "To reboot now, run: sudo reboot"
