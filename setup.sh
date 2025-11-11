@@ -245,9 +245,21 @@ PACKAGES=(
     exfat-utils
     sshfs
     rsync
-    firewalld
     pacman-contrib
     playerctl
+    qt5-wayland
+    qt6-wayland
+    xdg-utils
+    steam
+    lazygit
+    unrar
+    ttf-liberation
+    ttf-font-awesome
+    easyeffects
+    openssh
+    tree
+    mangohud
+    lib32-mangohud
 )
 
 if ! paru -S --needed --noconfirm "${PACKAGES[@]}"; then
@@ -448,6 +460,16 @@ mcd() {
     mkdir -p "$1" && cd "$1"
 }
 
+# Better history settings
+HISTSIZE=10000
+HISTFILESIZE=20000
+HISTCONTROL=ignoreboth:erasedups
+shopt -s histappend
+
+# Colored man pages
+export MANPAGER="less -R --use-color -Dd+r -Du+b"
+export MANROFFOPT="-P -c"
+
 # Initialize starship prompt
 eval "$(starship init bash)"
 
@@ -586,12 +608,9 @@ if ! sudo systemctl start bluetooth.service; then
     print_warning "Failed to start bluetooth.service"
 fi
 
-# Enable firewalld
-if ! sudo systemctl enable firewalld.service; then
-    print_warning "Failed to enable firewalld.service"
-fi
-if ! sudo systemctl start firewalld.service; then
-    print_warning "Failed to start firewalld.service"
+# Enable SSH
+if ! sudo systemctl enable sshd.service; then
+    print_warning "Failed to enable sshd.service"
 fi
 
 # Enable udiskie user service for automounting
@@ -602,7 +621,7 @@ cat > "$HOME/.config/systemd/user/udiskie.service" << 'EOF'
 Description=Udiskie automount daemon
 
 [Service]
-ExecStart=/usr/bin/udiskie --tray
+ExecStart=/usr/bin/udiskie
 Restart=on-failure
 
 [Install]
@@ -647,6 +666,30 @@ fi
 print_message "Updating tealdeer cache..."
 tldr --update || print_warning "Failed to update tealdeer cache, but continuing..."
 
+# System performance improvements
+print_message "Applying system performance improvements..."
+
+# Enable fstrim timer for SSD TRIM
+print_message "Enabling fstrim.timer for automatic SSD TRIM..."
+if ! sudo systemctl enable fstrim.timer; then
+    print_warning "Failed to enable fstrim.timer"
+fi
+
+# Configure swappiness for better desktop performance
+print_message "Configuring swappiness..."
+echo "vm.swappiness=10" | sudo tee /etc/sysctl.d/99-swappiness.conf > /dev/null
+
+# Configure dirty ratios for better write performance
+print_message "Configuring dirty ratios..."
+echo "vm.dirty_ratio=10" | sudo tee -a /etc/sysctl.d/99-swappiness.conf > /dev/null
+echo "vm.dirty_background_ratio=5" | sudo tee -a /etc/sysctl.d/99-swappiness.conf > /dev/null
+
+# Apply sysctl changes
+print_message "Applying sysctl changes..."
+sudo sysctl -p /etc/sysctl.d/99-swappiness.conf || print_warning "Failed to apply sysctl changes"
+
+print_message "System performance improvements applied!"
+
 # Set permissions on config files
 print_message "Setting correct permissions on config files..."
 chmod 644 "$HOME/.bashrc"
@@ -679,17 +722,20 @@ print_message "  - Display manager: ly is enabled and will start on boot"
 print_message "  - OpenTabletDriver: May need configuration via GUI"
 print_message "  - Printing: Access printer settings via system-config-printer"
 print_message "  - Bluetooth: Manage devices via blueman (system tray icon)"
-print_message "  - Firewall: Manage rules via firewall-config or firewall-cmd"
+print_message "  - SSH: Enabled and ready to use"
+print_message "  - Steam: Native version installed (launch with 'steam' command)"
+print_message "  - MangoHud: Use 'mangohud %command%' for Steam games or 'mangohud <game>' for other games"
 print_message ""
 print_message "Installed services:"
 print_message "  ✓ CUPS (printing)"
 print_message "  ✓ Bluetooth"
-print_message "  ✓ Firewalld (firewall)"
+print_message "  ✓ SSH (OpenSSH)"
 print_message "  ✓ Network Manager"
 print_message "  ✓ Power Profiles"
 print_message "  ✓ PipeWire (audio)"
 print_message "  ✓ Udiskie (USB automount)"
 print_message "  ✓ Paccache (automatic cache cleanup)"
+print_message "  ✓ fstrim.timer (SSD TRIM)"
 if [ "$GPU_TYPE" != "none" ]; then
     print_message "  ✓ GPU Drivers ($GPU_TYPE)"
 fi
