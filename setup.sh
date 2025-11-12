@@ -278,8 +278,6 @@ PACKAGES=(
     easyeffects
     openssh
     tree
-    mangohud
-    lib32-mangohud
 )
 
 if ! paru -S --needed --noconfirm "${PACKAGES[@]}"; then
