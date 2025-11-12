@@ -99,7 +99,6 @@ This script is designed to be run **immediately after a minimal Arch Linux insta
 ### Additional Software
 - **OpenTabletDriver** - Graphics tablet support
 - **Gamescope** - Gaming compositor
-- **nwg-look** - GTK theme manager
 - **Okular** - Document viewer
 - **GNOME Disk Utility**
 - **JDK 21** - Java development kit
