@@ -51,7 +51,7 @@ CONFIG_DIR="$SCRIPT_DIR/configs"
 # Welcome message
 echo ""
 echo "=========================================="
-echo "  Arch Linux Post-Install Setup Script"
+echo "  Starch Post-Install Setup Script"
 echo "=========================================="
 echo ""
 print_message "Script directory: $SCRIPT_DIR"
@@ -108,7 +108,7 @@ case $gpu_choice in
 esac
 echo ""
 
-print_message "Starting Arch Linux post-install setup..."
+print_message "Starting Starch post-install setup..."
 
 # Update system
 print_message "Updating system packages..."
@@ -116,6 +116,26 @@ if ! sudo pacman -Syu --noconfirm; then
     print_error "Failed to update system packages."
     exit 1
 fi
+
+# Optimize pacman configuration
+print_message "Optimizing pacman configuration..."
+sudo sed -i 's/^#ParallelDownloads/ParallelDownloads/' /etc/pacman.conf
+if ! grep -q "^ParallelDownloads" /etc/pacman.conf; then
+    echo "ParallelDownloads = 5" | sudo tee -a /etc/pacman.conf > /dev/null
+fi
+sudo sed -i 's/^#Color/Color/' /etc/pacman.conf
+if ! grep -q "^Color" /etc/pacman.conf; then
+    echo "Color" | sudo tee -a /etc/pacman.conf > /dev/null
+fi
+# Add ILoveCandy after Color line
+if ! grep -q "ILoveCandy" /etc/pacman.conf; then
+    sudo sed -i '/^Color/a ILoveCandy' /etc/pacman.conf
+fi
+# Add VerbosePkgLists
+if ! grep -q "VerbosePkgLists" /etc/pacman.conf; then
+    sudo sed -i '/^Color/a VerbosePkgLists' /etc/pacman.conf
+fi
+print_message "Pacman optimization complete!"
 
 # Install base-devel if not already installed (required for AUR)
 print_message "Installing base-devel, git, rust, and build tools..."
